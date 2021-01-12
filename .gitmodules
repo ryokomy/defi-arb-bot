@@ -1,0 +1,3 @@
+[submodule "submodules/1inchProtocol"]
+	path = submodules/1inchProtocol
+	url = git@github.com:1inch-exchange/1inchProtocol.git
