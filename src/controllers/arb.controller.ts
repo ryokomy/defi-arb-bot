@@ -1,24 +1,34 @@
 import { NextFunction, Request, Response } from 'express';
 import { debug } from 'winston';
-import * as OneSplitContract from '../contracts/OneSplit.contract'
+import ArbService from '../services/arb.service';
 
 class ArbController {
-  public getChance = async (req: Request, res: Response, next: NextFunction): void => {
-    try {
-      debug("called /arb/getChance");
+  public arbService = new ArbService();
 
-      let expectedReturn: OneSplitContract.ExpectedReturnType = await OneSplitContract.call.getExpectedReturn(
-        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359",
-        100,
-        10,
-        0
-      )
-      console.log(expectedReturn)
+  public getChance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      debug('called /arb/getChance');
+
+      // ETH to
+      const expectedReturn = await this.arbService.getChance();
+      console.log(expectedReturn);
 
       res.status(200).json({
-        expectedReturn
-      })
+        expectedReturn,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public zerox = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      debug('called /arb/getPrices');
+
+      const sellToken = 'DAI';
+      const symbolPricePairs = await this.arbService.getSymbolPricePairs(sellToken);
+
+      res.status(200).json(symbolPricePairs);
     } catch (error) {
       next(error);
     }
