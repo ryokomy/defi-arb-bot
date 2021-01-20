@@ -23,12 +23,12 @@ class ArbController {
 
   public zerox = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      debug('called /arb/getPrices');
+      debug('called /arb/zerox');
 
-      const sellToken = 'DAI';
-      const symbolPricePairs = await this.arbService.getSymbolPricePairs(sellToken);
+      const sellTokens = ['DAI', 'WETH', '1INCH'];
+      const symbolPricePairInfo = await this.arbService.getSymbolPricePairInfo(sellTokens);
 
-      res.status(200).json(symbolPricePairs);
+      res.status(200).json(symbolPricePairInfo);
     } catch (error) {
       next(error);
     }
