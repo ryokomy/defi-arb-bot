@@ -25,10 +25,29 @@ class ArbController {
     try {
       debug('called /arb/zerox');
 
-      const sellTokens = ['DAI', 'WETH', '1INCH'];
-      const symbolPricePairInfo = await this.arbService.getSymbolPricePairInfo(sellTokens);
+      const sellTokens = [
+        'DAI',
+        'WETH',
+        'BAT',
+        'MKR',
+        'WBTC',
+        'SNX',
+        'LINK',
+        'MANA',
+        'ENJ',
+        'POWR',
+        'COMP',
+        'AAVE',
+        'YFI',
+        'AMPL',
+        'CRV',
+        'SUSHI',
+        'UNI',
+        '1INCH',
+      ];
+      const fromSymbolToSymbolPricePairs = await this.arbService.getFromSymbolToSymbolPricePairs(sellTokens);
 
-      res.status(200).json(symbolPricePairInfo);
+      res.status(200).json(fromSymbolToSymbolPricePairs);
     } catch (error) {
       next(error);
     }

@@ -6,7 +6,7 @@ type SymbolPricePair = {
   symbol: string;
   price: string;
 };
-type SymbolPricePairInfo = {
+type FromSymbolToSymbolPricePairs = {
   [symbol: string]: SymbolPricePair[];
 };
 
@@ -36,7 +36,7 @@ class ArbService {
     return symbolPricePairs;
   }
 
-  public async getSymbolPricePairInfo(sellTokens: string[]) {
+  public async getFromSymbolToSymbolPricePairs(sellTokens: string[]) {
     const url = 'https://api.0x.org/swap/v1/prices?sellToken=';
 
     const promises = [];
@@ -45,12 +45,14 @@ class ArbService {
     });
     const responses = await Promise.all(promises);
 
-    const symbolPricePairInfo: SymbolPricePairInfo = {};
+    const fromSymbolToSymbolPricePairs: FromSymbolToSymbolPricePairs = {};
     responses.forEach((response, index) => {
-      symbolPricePairInfo[sellTokens[index]] = response.data.records;
+      fromSymbolToSymbolPricePairs[sellTokens[index]] = (response.data.records as SymbolPricePair[]).filter(symbolPricePair => {
+        return sellTokens.includes(symbolPricePair.symbol);
+      });
     });
 
-    return symbolPricePairInfo;
+    return fromSymbolToSymbolPricePairs;
   }
 }
 
