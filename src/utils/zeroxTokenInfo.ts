@@ -1,13 +1,4 @@
-type ZeroxToken = {
-  symbol: string;
-  address: string;
-  name: string;
-  decimals: number;
-};
-
-type ZeroxTokenInfo = {
-  [symbol: string]: ZeroxToken;
-};
+import { ZeroxTokenInfo } from '../../@types/zeroxTokenInfo';
 
 const zeroxTokenInfo: ZeroxTokenInfo = {
   DAI: {
