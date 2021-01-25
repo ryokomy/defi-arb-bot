@@ -60,22 +60,35 @@ class ArbController {
       // DAIからの往復を計算
       const buyTokenInterestRatePairs: BuyTokenInterestRatePair[] = [];
       transformedTokens.forEach(transformedToken => {
-        // debug(`----- DAI => ${buyToken} => DAI -----`)
         console.log(`----- ${orgToken} => ${transformedToken} => ${orgToken} -----`);
-        const orgDecimals = zeroxTokenInfo[orgToken].decimals;
         const transformedDecimals = zeroxTokenInfo[transformedToken].decimals;
 
-        const guaranteedPrice = sellTokenToQuoteMap[transformedToken][orgToken].guaranteedPrice;
-        const bnSellAmount = new BigNumber(sellTokenToQuoteMap[transformedToken][orgToken].sellAmount).dividedBy(
-          new BigNumber(`1e${transformedDecimals}`),
-        );
+        const forwardQuote = sellTokenToQuoteMap[orgToken][transformedToken];
+        const inverseQuote = sellTokenToQuoteMap[transformedToken][orgToken];
+
+        const guaranteedPrice = inverseQuote.guaranteedPrice;
+        const bnSellAmount = new BigNumber(inverseQuote.sellAmount).dividedBy(new BigNumber(`1e${transformedDecimals}`));
 
         const bnFinalAmount = new BigNumber(guaranteedPrice).multipliedBy(bnSellAmount);
 
         const bnOrgAmount = new BigNumber(orgAmount);
         const bnPercentage = bnFinalAmount.minus(bnOrgAmount).multipliedBy(new BigNumber(100)).dividedBy(bnOrgAmount);
-        // debug(`initial: ${initialAmount} => final: ${bnFinalAmount.toFixed()}  (${bnPercentage.toFixed()}[%])\n\n`)
-        console.log(`initial: ${orgAmount} => final: ${bnFinalAmount.toFixed()}  (${bnPercentage.toFixed()}[%])\n`);
+        console.log(`interest rate: ${bnPercentage.toFixed()}[%]`);
+        console.log(`initial: ${orgAmount} => final: ${bnFinalAmount.toFixed()}`);
+
+        // DEX
+        forwardQuote.sources.forEach(source => {
+          if (Number(source.proportion) > 0) {
+            console.log(`forward source: ${source.name}  (${Number(source.proportion) * 100}[%])`);
+          }
+        });
+        inverseQuote.sources.forEach(source => {
+          if (Number(source.proportion) > 0) {
+            console.log(`inverse source: ${source.name}  (${Number(source.proportion) * 100}[%])`);
+          }
+        });
+
+        console.log('\n');
 
         // buyTokenToInterestRateMap[buyToken] = bnPercentage.toFixed();
         buyTokenInterestRatePairs.push({ buyToken: transformedToken, interestRate: bnPercentage.toFixed() });
