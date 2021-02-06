@@ -4,6 +4,7 @@ export enum NetworkType {
   main = 1,
   ropsten = 2,
   rinkeby = 4,
+  'forked-main' = 5353,
 }
 
 const getHttpProvider = (network: NetworkType) => {
@@ -14,6 +15,8 @@ const getHttpProvider = (network: NetworkType) => {
       return new Web3.providers.HttpProvider('https://ropsten.infura.io/v3/cf82ea75d3284fdc83ae6a5f09e77927');
     case NetworkType.rinkeby:
       return new Web3.providers.HttpProvider('https://rinkeby.infura.io/v3/cf82ea75d3284fdc83ae6a5f09e77927');
+    case NetworkType['forked-main']:
+      return new Web3.providers.HttpProvider('http://localhost:7545');
   }
 };
 

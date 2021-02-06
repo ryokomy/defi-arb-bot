@@ -99,7 +99,11 @@ class ArbController {
         return new BigNumber(b.interestRate).comparedTo(new BigNumber(a.interestRate));
       });
 
-      res.status(200).json(buyTokenInterestRatePairs);
+      res.status(200).json({
+        forwardQuote: sellTokenToQuoteMap[orgToken][buyTokenInterestRatePairs[0].buyToken],
+        inverseQuote: sellTokenToQuoteMap[buyTokenInterestRatePairs[0].buyToken][orgToken],
+        buyTokenInterestRatePairs,
+      });
     } catch (error) {
       next(error);
     }
