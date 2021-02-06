@@ -3,6 +3,7 @@ import { debug } from 'winston';
 import ArbService from '../services/arb.service';
 import BigNumber from 'bignumber.js';
 import zeroxTokenInfo from '../utils/zeroxTokenInfo';
+import * as TokenSwap from '../contracts/TokenSwap.contract';
 
 // type BuyTokenToInterestRateMap = {
 //   [buyTokenSymbol: string]: string;
@@ -99,10 +100,29 @@ class ArbController {
         return new BigNumber(b.interestRate).comparedTo(new BigNumber(a.interestRate));
       });
 
+      // レートが1番いいアービトラージ
+      const bestForwardQuote = sellTokenToQuoteMap[orgToken][buyTokenInterestRatePairs[0].buyToken];
+      const bestInverseQuote = sellTokenToQuoteMap[buyTokenInterestRatePairs[0].buyToken][orgToken];
+
+      // レートが1番いいものをarbitrage
+      const value = new BigNumber(bestForwardQuote.value).plus(new BigNumber(bestInverseQuote.value)).toFixed();
+      const txReceipt = await TokenSwap.sendTx.arbitrage(
+        bestForwardQuote.sellTokenAddress,
+        bestForwardQuote.buyTokenAddress,
+        bestForwardQuote.allowanceTarget,
+        bestForwardQuote.to,
+        bestForwardQuote.data,
+        bestInverseQuote.allowanceTarget,
+        bestInverseQuote.to,
+        bestInverseQuote.data,
+        value,
+      );
+
       res.status(200).json({
-        forwardQuote: sellTokenToQuoteMap[orgToken][buyTokenInterestRatePairs[0].buyToken],
-        inverseQuote: sellTokenToQuoteMap[buyTokenInterestRatePairs[0].buyToken][orgToken],
+        bestForwardQuote,
+        bestInverseQuote,
         buyTokenInterestRatePairs,
+        txReceipt,
       });
     } catch (error) {
       next(error);

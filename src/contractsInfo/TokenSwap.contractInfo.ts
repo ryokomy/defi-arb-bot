@@ -13,6 +13,49 @@ export const ABI: AbiItem[] = [
       {
         indexed: false,
         internalType: 'contract IERC20',
+        name: 'orgToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'contract IERC20',
+        name: 'viaToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'initialOrgTokenAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'initialViaTokenAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'finalOrgTokenAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'finalViaTokenAmount',
+        type: 'uint256',
+      },
+    ],
+    name: 'Arbitrage',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'contract IERC20',
         name: 'sellToken',
         type: 'address',
       },
@@ -31,6 +74,54 @@ export const ABI: AbiItem[] = [
     ],
     name: 'BoughtTokens',
     type: 'event',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'contract IERC20',
+        name: 'orgToken',
+        type: 'address',
+      },
+      {
+        internalType: 'contract IERC20',
+        name: 'viaToken',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'forwardSpender',
+        type: 'address',
+      },
+      {
+        internalType: 'address payable',
+        name: 'forwardSwapTarget',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes',
+        name: 'forwardSwapCallData',
+        type: 'bytes',
+      },
+      {
+        internalType: 'address',
+        name: 'inverseSpender',
+        type: 'address',
+      },
+      {
+        internalType: 'address payable',
+        name: 'inverseSwapTarget',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes',
+        name: 'inverseSwapCallData',
+        type: 'bytes',
+      },
+    ],
+    name: 'arbitrage',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
   },
   {
     inputs: [

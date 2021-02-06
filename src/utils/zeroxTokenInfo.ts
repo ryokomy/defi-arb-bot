@@ -1,4 +1,4 @@
-import { ZeroxTokenInfo } from '../../@types/zeroxTokenInfo';
+import { ZeroxTokenInfo } from '../@types/zeroxTokenInfo';
 
 const zeroxTokenInfo: ZeroxTokenInfo = {
   DAI: {

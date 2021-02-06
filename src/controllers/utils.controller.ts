@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { debug } from 'winston';
-import * as DAI from '../contracts/DAI.contract';
+import * as ERC20 from '../contracts/ERC20.contract';
 import BigNumber from 'bignumber.js';
 import { getWeb3Instance, NetworkType, setPrivateKey } from '../utils/Web3';
 import * as TokenSwapInfo from '../contractsInfo/TokenSwap.contractInfo';
+import zeroxTokenInfo from '../utils/zeroxTokenInfo';
 
 class UtilsController {
   public daiBalanceOf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -16,9 +17,10 @@ class UtilsController {
       // const address = web3.eth.accounts.wallet[0].address;
       const address = TokenSwapInfo.CONTRACT_ADDRESS;
 
-      const balance = await DAI.call.balanceOf(address);
+      const symbol = 'DAI';
+      const balance = await ERC20.call.balanceOf(symbol, address);
       const bnBalance = new BigNumber(balance);
-      const bnDecimals = new BigNumber(1e18);
+      const bnDecimals = new BigNumber(`1e${zeroxTokenInfo[symbol].decimals}`);
 
       const balanceDAI: string = bnBalance.dividedBy(bnDecimals).toFixed();
 
@@ -63,8 +65,9 @@ class UtilsController {
 
       const address = TokenSwapInfo.CONTRACT_ADDRESS;
       const amount = 1000;
+      const symbol = 'DAI';
 
-      const txReceipt = await DAI.sendTx.transfer(address, amount);
+      const txReceipt = await ERC20.sendTx.transfer(symbol, address, amount);
 
       res.status(200).json({
         txReceipt,
