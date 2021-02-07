@@ -21,6 +21,10 @@ type BuyTokenToQuoteMap = {
 type SellTokenToQuoteMap = {
   [sellTokenSymbol: string]: BuyTokenToQuoteMap;
 };
+type BuyTokenInterestRatePair = {
+  buyToken: string;
+  interestRate: string;
+};
 
 class ArbService {
   public async getChance(): Promise<OneSplitContract.ExpectedReturnType> {
@@ -140,6 +144,51 @@ class ArbService {
     }
 
     return sellTokenToQuoteMap;
+  }
+
+  public getBuyTokenInterestRatePairs(orgToken: string, orgAmount: number, transformedTokens: string[], sellTokenToQuoteMap: SellTokenToQuoteMap) {
+    const buyTokenInterestRatePairs: BuyTokenInterestRatePair[] = [];
+    transformedTokens.forEach(transformedToken => {
+      console.log(`----- ${orgToken} => ${transformedToken} => ${orgToken} -----`);
+      const transformedDecimals = zeroxTokenInfo[transformedToken].decimals;
+
+      const forwardQuote = sellTokenToQuoteMap[orgToken][transformedToken];
+      const inverseQuote = sellTokenToQuoteMap[transformedToken][orgToken];
+
+      const guaranteedPrice = inverseQuote.guaranteedPrice;
+      const bnSellAmount = new BigNumber(inverseQuote.sellAmount).dividedBy(new BigNumber(`1e${transformedDecimals}`));
+
+      const bnFinalAmount = new BigNumber(guaranteedPrice).multipliedBy(bnSellAmount);
+
+      const bnOrgAmount = new BigNumber(orgAmount);
+      const bnPercentage = bnFinalAmount.minus(bnOrgAmount).multipliedBy(new BigNumber(100)).dividedBy(bnOrgAmount);
+      console.log(`interest rate: ${bnPercentage.toFixed()}[%]`);
+      console.log(`initial: ${orgAmount} => final: ${bnFinalAmount.toFixed()}`);
+
+      // DEX
+      forwardQuote.sources.forEach(source => {
+        if (Number(source.proportion) > 0) {
+          console.log(`forward source: ${source.name}  (${Number(source.proportion) * 100}[%])`);
+        }
+      });
+      inverseQuote.sources.forEach(source => {
+        if (Number(source.proportion) > 0) {
+          console.log(`inverse source: ${source.name}  (${Number(source.proportion) * 100}[%])`);
+        }
+      });
+
+      console.log('\n');
+
+      // buyTokenToInterestRateMap[buyToken] = bnPercentage.toFixed();
+      buyTokenInterestRatePairs.push({ buyToken: transformedToken, interestRate: bnPercentage.toFixed() });
+    });
+
+    // レートがいい順に並べ替え
+    buyTokenInterestRatePairs.sort((a, b) => {
+      return new BigNumber(b.interestRate).comparedTo(new BigNumber(a.interestRate));
+    });
+
+    return buyTokenInterestRatePairs;
   }
 }
 
