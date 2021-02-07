@@ -35,6 +35,7 @@ const debugBalanceTokenOfSender = async (token: string) => {
  */
 const arbitrage = async (
   orgToken: string,
+  flashLoanAmount: string,
   viaToken: string,
   forwardSpender: string,
   forwardSwapTarget: string,
@@ -50,7 +51,17 @@ const arbitrage = async (
   try {
     // transaction
     const txReceipt: TransactionReceipt = (await TokenSwap.methods
-      .arbitrage(orgToken, viaToken, forwardSpender, forwardSwapTarget, forwardSwapCallData, inverseSpender, inverseSwapTarget, inverseSwapCallData)
+      .arbitrage(
+        orgToken,
+        flashLoanAmount,
+        viaToken,
+        forwardSpender,
+        forwardSwapTarget,
+        forwardSwapCallData,
+        inverseSpender,
+        inverseSwapTarget,
+        inverseSwapCallData,
+      )
       .send({ value })) as TransactionReceipt;
     return txReceipt;
   } catch (err) {

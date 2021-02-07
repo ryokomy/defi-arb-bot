@@ -3,7 +3,13 @@ import { AbiItem } from 'web3-utils';
 export const CONTRACT_ADDRESS = '0x9f61C3a810707FA7bda4D659ddB844AC5547d4F7';
 export const ABI: AbiItem[] = [
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: 'contract ILendingPoolAddressesProvider',
+        name: '_addressProvider',
+        type: 'address',
+      },
+    ],
     stateMutability: 'nonpayable',
     type: 'constructor',
   },
@@ -15,6 +21,12 @@ export const ABI: AbiItem[] = [
         internalType: 'contract IERC20',
         name: 'orgToken',
         type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'flashLoanAmount',
+        type: 'uint256',
       },
       {
         indexed: false,
@@ -51,70 +63,76 @@ export const ABI: AbiItem[] = [
     type: 'event',
   },
   {
-    anonymous: false,
-    inputs: [
+    inputs: [],
+    name: 'ADDRESSES_PROVIDER',
+    outputs: [
       {
-        indexed: false,
-        internalType: 'contract IERC20',
-        name: 'sellToken',
+        internalType: 'contract ILendingPoolAddressesProvider',
+        name: '',
         type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'contract IERC20',
-        name: 'buyToken',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'boughtAmount',
-        type: 'uint256',
       },
     ],
-    name: 'BoughtTokens',
-    type: 'event',
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'LENDING_POOL',
+    outputs: [
+      {
+        internalType: 'contract ILendingPool',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [
       {
         internalType: 'contract IERC20',
-        name: 'orgToken',
+        name: '_orgToken',
         type: 'address',
       },
       {
+        internalType: 'uint256',
+        name: '_flashLoanAmount',
+        type: 'uint256',
+      },
+      {
         internalType: 'contract IERC20',
-        name: 'viaToken',
+        name: '_viaToken',
         type: 'address',
       },
       {
         internalType: 'address',
-        name: 'forwardSpender',
+        name: '_forwardSpender',
         type: 'address',
       },
       {
         internalType: 'address payable',
-        name: 'forwardSwapTarget',
+        name: '_forwardSwapTarget',
         type: 'address',
       },
       {
         internalType: 'bytes',
-        name: 'forwardSwapCallData',
+        name: '_forwardSwapCallData',
         type: 'bytes',
       },
       {
         internalType: 'address',
-        name: 'inverseSpender',
+        name: '_inverseSpender',
         type: 'address',
       },
       {
         internalType: 'address payable',
-        name: 'inverseSwapTarget',
+        name: '_inverseSwapTarget',
         type: 'address',
       },
       {
         internalType: 'bytes',
-        name: 'inverseSwapCallData',
+        name: '_inverseSwapCallData',
         type: 'bytes',
       },
     ],
@@ -126,72 +144,40 @@ export const ABI: AbiItem[] = [
   {
     inputs: [
       {
-        internalType: 'contract IERC20',
-        name: 'token',
-        type: 'address',
-      },
-    ],
-    name: 'debugBalanceToken',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: 'balance',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'contract IERC20',
-        name: 'token',
-        type: 'address',
-      },
-    ],
-    name: 'debugBalanceTokenOfSender',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: 'balance',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'contract IERC20',
-        name: 'sellToken',
-        type: 'address',
+        internalType: 'address[]',
+        name: 'assets',
+        type: 'address[]',
       },
       {
-        internalType: 'contract IERC20',
-        name: 'buyToken',
-        type: 'address',
+        internalType: 'uint256[]',
+        name: 'amounts',
+        type: 'uint256[]',
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'premiums',
+        type: 'uint256[]',
       },
       {
         internalType: 'address',
-        name: 'spender',
-        type: 'address',
-      },
-      {
-        internalType: 'address payable',
-        name: 'swapTarget',
+        name: 'initiator',
         type: 'address',
       },
       {
         internalType: 'bytes',
-        name: 'swapCallData',
+        name: 'params',
         type: 'bytes',
       },
     ],
-    name: 'fillQuote',
-    outputs: [],
-    stateMutability: 'payable',
+    name: 'executeOperation',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {

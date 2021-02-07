@@ -108,6 +108,7 @@ class ArbController {
       const value = new BigNumber(bestForwardQuote.value).plus(new BigNumber(bestInverseQuote.value)).toFixed();
       const txReceipt = await TokenSwap.sendTx.arbitrage(
         bestForwardQuote.sellTokenAddress,
+        bestForwardQuote.sellAmount,
         bestForwardQuote.buyTokenAddress,
         bestForwardQuote.allowanceTarget,
         bestForwardQuote.to,
