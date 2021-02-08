@@ -79,7 +79,7 @@ class ArbService {
     }
   }
 
-  public async getSellTokenToQuoteMap(orgToken: string, orgAmount: number, transformedTokens: string[]) {
+  public async getSellTokenToQuoteMap(orgToken: string, orgAmount: number, viaTokens: string[]) {
     const sellTokenToQuoteMap: SellTokenToQuoteMap = {};
     const url = 'https://api.0x.org/swap/v1/quote';
 
@@ -88,11 +88,11 @@ class ArbService {
       {
         // forwardのquoteをクエリ
         const forwardPromises = [];
-        transformedTokens.forEach(transformedToken => {
+        viaTokens.forEach(viaToken => {
           const sellToken = orgToken;
           const decimals = zeroxTokenInfo[sellToken].decimals;
           const sellAmount = new BigNumber(orgAmount).multipliedBy(new BigNumber(`1e${decimals}`)).toFixed();
-          const buyToken = transformedToken;
+          const buyToken = viaToken;
           const config: AxiosRequestConfig = {
             params: {
               sellToken,
@@ -108,7 +108,7 @@ class ArbService {
         const buyTokenToQuoteMapForOrgToken: BuyTokenToQuoteMap = {};
         forwardResponses.forEach((rawResponse, index) => {
           const response = rawResponse.data as QuoteResponse;
-          buyTokenToQuoteMapForOrgToken[transformedTokens[index]] = response;
+          buyTokenToQuoteMapForOrgToken[viaTokens[index]] = response;
         });
         sellTokenToQuoteMap[orgToken] = buyTokenToQuoteMapForOrgToken;
       }
@@ -117,16 +117,16 @@ class ArbService {
       {
         // inverseのquoteをクエリ
         const inversePromises = [];
-        transformedTokens.forEach(transformedToken => {
-          const sellToken = transformedToken;
+        viaTokens.forEach(viaToken => {
+          const sellToken = viaToken;
           const decimals = zeroxTokenInfo[sellToken].decimals;
-          const guaranteedPrice = sellTokenToQuoteMap[orgToken][transformedToken].guaranteedPrice;
+          const guaranteedPrice = sellTokenToQuoteMap[orgToken][viaToken].guaranteedPrice;
           const sellAmount = new BigNumber(guaranteedPrice)
             .multipliedBy(new BigNumber(orgAmount))
             .multipliedBy(new BigNumber(`1e${decimals}`))
             .toFixed();
           // 以下はベストな取引価格の場合なので今回は使わない
-          // const sellAmount = sellTokenToQuoteMap[orgToken][transformedToken].buyAmount  // = sellTokenToQuoteMap[orgToken][transformedToken].price * orgAmount * decimals
+          // const sellAmount = sellTokenToQuoteMap[orgToken][viaToken].buyAmount  // = sellTokenToQuoteMap[orgToken][viaToken].price * orgAmount * decimals
           const buyToken = orgToken;
           const config: AxiosRequestConfig = {
             params: {
@@ -144,7 +144,7 @@ class ArbService {
           const response = rawResponse.data as QuoteResponse;
           const buyTokenToQuoteMap: BuyTokenToQuoteMap = {};
           buyTokenToQuoteMap[orgToken] = response;
-          sellTokenToQuoteMap[transformedTokens[index]] = buyTokenToQuoteMap;
+          sellTokenToQuoteMap[viaTokens[index]] = buyTokenToQuoteMap;
         });
       }
 
@@ -154,17 +154,17 @@ class ArbService {
     }
   }
 
-  public getBuyTokenInterestRatePairs(orgToken: string, orgAmount: number, transformedTokens: string[], sellTokenToQuoteMap: SellTokenToQuoteMap) {
+  public getBuyTokenInterestRatePairs(orgToken: string, orgAmount: number, viaTokens: string[], sellTokenToQuoteMap: SellTokenToQuoteMap) {
     const buyTokenInterestRatePairs: BuyTokenInterestRatePair[] = [];
-    transformedTokens.forEach(transformedToken => {
-      console.log(`----- ${orgToken} => ${transformedToken} => ${orgToken} -----`);
-      const transformedDecimals = zeroxTokenInfo[transformedToken].decimals;
+    viaTokens.forEach(viaToken => {
+      console.log(`----- ${orgToken} => ${viaToken} => ${orgToken} -----`);
+      const viaDecimals = zeroxTokenInfo[viaToken].decimals;
 
-      const forwardQuote = sellTokenToQuoteMap[orgToken][transformedToken];
-      const inverseQuote = sellTokenToQuoteMap[transformedToken][orgToken];
+      const forwardQuote = sellTokenToQuoteMap[orgToken][viaToken];
+      const inverseQuote = sellTokenToQuoteMap[viaToken][orgToken];
 
       const guaranteedPrice = inverseQuote.guaranteedPrice;
-      const bnSellAmount = new BigNumber(inverseQuote.sellAmount).dividedBy(new BigNumber(`1e${transformedDecimals}`));
+      const bnSellAmount = new BigNumber(inverseQuote.sellAmount).dividedBy(new BigNumber(`1e${viaDecimals}`));
 
       const bnFinalAmount = new BigNumber(guaranteedPrice).multipliedBy(bnSellAmount);
 
@@ -188,7 +188,7 @@ class ArbService {
       console.log('\n');
 
       // buyTokenToInterestRateMap[buyToken] = bnPercentage.toFixed();
-      buyTokenInterestRatePairs.push({ buyToken: transformedToken, interestRate: bnPercentage.toFixed() });
+      buyTokenInterestRatePairs.push({ buyToken: viaToken, interestRate: bnPercentage.toFixed() });
     });
 
     // レートがいい順に並べ替え
@@ -199,12 +199,12 @@ class ArbService {
     return buyTokenInterestRatePairs;
   }
 
-  public async watch(orgToken: string, orgAmount: number, transformedTokens: string[]) {
+  public async watch(orgToken: string, orgAmount: number, viaTokens: string[]) {
     try {
-      const sellTokenToQuoteMap = await this.getSellTokenToQuoteMap(orgToken, orgAmount, transformedTokens);
+      const sellTokenToQuoteMap = await this.getSellTokenToQuoteMap(orgToken, orgAmount, viaTokens);
 
       // DAIからの往復を計算
-      const buyTokenInterestRatePairs = this.getBuyTokenInterestRatePairs(orgToken, orgAmount, transformedTokens, sellTokenToQuoteMap);
+      const buyTokenInterestRatePairs = this.getBuyTokenInterestRatePairs(orgToken, orgAmount, viaTokens, sellTokenToQuoteMap);
 
       // レートが1番いいアービトラージ
       const bestForwardQuote = sellTokenToQuoteMap[orgToken][buyTokenInterestRatePairs[0].buyToken];

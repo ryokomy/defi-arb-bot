@@ -9,7 +9,7 @@ class ArbController {
 
   private orgToken = 'DAI';
   private orgAmount = 100000; // 100000[DAI]
-  private transformedTokens: string[] = [
+  private viaTokens: string[] = [
     'WETH',
     'BAT',
     'MKR',
@@ -35,7 +35,7 @@ class ArbController {
     try {
       debug('called /arb/watch');
 
-      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.transformedTokens);
+      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.viaTokens);
 
       res.status(200).json({
         bestForwardQuote: result.bestForwardQuote,
@@ -51,7 +51,7 @@ class ArbController {
     try {
       debug('called /arb/execute');
 
-      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.transformedTokens);
+      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.viaTokens);
 
       const bestForwardQuote = result.bestForwardQuote;
       const bestInverseQuote = result.bestInverseQuote;
