@@ -3,8 +3,14 @@ import * as moment from 'moment';
 import axios from 'axios';
 import { BuyTokenInterestRatePair } from './services/arb.service';
 import fs from 'fs';
+import cron from 'node-cron';
 
-const main = async () => {
+const startDate = moment.utc().toDate();
+const filename = `./src/logs/watch/${startDate}.csv`;
+
+const writeRecord = async () => {
+  console.log('Start...');
+
   const viaTokens: string[] = [
     'WETH',
     'BAT',
@@ -33,7 +39,7 @@ const main = async () => {
     header.push({ id: viaToken, title: viaToken });
   });
 
-  const path = './src/logs/watch/komi.csv';
+  const path = filename;
   const append = fs.existsSync(path);
 
   const csvWriter = createObjectCsvWriter({
@@ -43,6 +49,7 @@ const main = async () => {
   });
 
   const date = moment.utc().toDate();
+  console.log(`date: ${date}`);
 
   const url = 'http://localhost:3000/arb/watch';
   const res = await axios.get(url);
@@ -61,4 +68,8 @@ const main = async () => {
     });
 };
 
-main();
+const writeRecordSync = () => {
+  writeRecord();
+};
+
+cron.schedule('* * * * *', writeRecordSync);
