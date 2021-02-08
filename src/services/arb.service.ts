@@ -21,7 +21,7 @@ type BuyTokenToQuoteMap = {
 type SellTokenToQuoteMap = {
   [sellTokenSymbol: string]: BuyTokenToQuoteMap;
 };
-type BuyTokenInterestRatePair = {
+export type BuyTokenInterestRatePair = {
   buyToken: string;
   interestRate: string;
 };
