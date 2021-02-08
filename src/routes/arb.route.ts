@@ -13,7 +13,8 @@ class ArbRoute implements Route {
 
   private initializeRoutes() {
     // this.router.get(`${this.path}/getChance`, this.arbController.getChance);
-    this.router.get(`${this.path}/zerox`, this.arbController.zerox);
+    this.router.get(`${this.path}/watch`, this.arbController.watch);
+    this.router.get(`${this.path}/execute`, this.arbController.execute);
   }
 }
 

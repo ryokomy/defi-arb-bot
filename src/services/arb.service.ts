@@ -55,95 +55,103 @@ class ArbService {
   public async getSellTokenToPriceMap(sellTokens: string[]): Promise<SellTokenToPriceMap> {
     const url = 'https://api.0x.org/swap/v1/prices?sellToken=';
 
-    const promises = [];
-    sellTokens.forEach(sellToken => {
-      promises.push(axios.get(url + sellToken));
-    });
-    const responses = await Promise.all(promises);
-
-    const sellTokenToPriceMap: SellTokenToPriceMap = {};
-    responses.forEach((response, index) => {
-      const buyTokenToPriceMap: BuyTokenToPriceMap = {};
-      (response.data.records as SymbolPricePair[]).forEach(symbolPricePair => {
-        if (sellTokens.includes(symbolPricePair.symbol)) {
-          buyTokenToPriceMap[symbolPricePair.symbol] = symbolPricePair.price;
-        }
+    try {
+      const promises = [];
+      sellTokens.forEach(sellToken => {
+        promises.push(axios.get(url + sellToken));
       });
-      sellTokenToPriceMap[sellTokens[index]] = buyTokenToPriceMap;
-    });
+      const responses = await Promise.all(promises);
 
-    return sellTokenToPriceMap;
+      const sellTokenToPriceMap: SellTokenToPriceMap = {};
+      responses.forEach((response, index) => {
+        const buyTokenToPriceMap: BuyTokenToPriceMap = {};
+        (response.data.records as SymbolPricePair[]).forEach(symbolPricePair => {
+          if (sellTokens.includes(symbolPricePair.symbol)) {
+            buyTokenToPriceMap[symbolPricePair.symbol] = symbolPricePair.price;
+          }
+        });
+        sellTokenToPriceMap[sellTokens[index]] = buyTokenToPriceMap;
+      });
+
+      return sellTokenToPriceMap;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async getSellTokenToQuoteMap(orgToken: string, orgAmount: number, transformedTokens: string[]) {
     const sellTokenToQuoteMap: SellTokenToQuoteMap = {};
     const url = 'https://api.0x.org/swap/v1/quote';
 
-    // forward
-    {
-      // forwardのquoteをクエリ
-      const forwardPromises = [];
-      transformedTokens.forEach(transformedToken => {
-        const sellToken = orgToken;
-        const decimals = zeroxTokenInfo[sellToken].decimals;
-        const sellAmount = new BigNumber(orgAmount).multipliedBy(new BigNumber(`1e${decimals}`)).toFixed();
-        const buyToken = transformedToken;
-        const config: AxiosRequestConfig = {
-          params: {
-            sellToken,
-            sellAmount,
-            buyToken,
-          },
-        };
-        forwardPromises.push(axios.get(url, config));
-      });
-      const forwardResponses = await Promise.all(forwardPromises);
+    try {
+      // forward
+      {
+        // forwardのquoteをクエリ
+        const forwardPromises = [];
+        transformedTokens.forEach(transformedToken => {
+          const sellToken = orgToken;
+          const decimals = zeroxTokenInfo[sellToken].decimals;
+          const sellAmount = new BigNumber(orgAmount).multipliedBy(new BigNumber(`1e${decimals}`)).toFixed();
+          const buyToken = transformedToken;
+          const config: AxiosRequestConfig = {
+            params: {
+              sellToken,
+              sellAmount,
+              buyToken,
+            },
+          };
+          forwardPromises.push(axios.get(url, config));
+        });
+        const forwardResponses = await Promise.all(forwardPromises);
 
-      // forwardに対するquoteのマップを作成
-      const buyTokenToQuoteMapForOrgToken: BuyTokenToQuoteMap = {};
-      forwardResponses.forEach((rawResponse, index) => {
-        const response = rawResponse.data as QuoteResponse;
-        buyTokenToQuoteMapForOrgToken[transformedTokens[index]] = response;
-      });
-      sellTokenToQuoteMap[orgToken] = buyTokenToQuoteMapForOrgToken;
+        // forwardに対するquoteのマップを作成
+        const buyTokenToQuoteMapForOrgToken: BuyTokenToQuoteMap = {};
+        forwardResponses.forEach((rawResponse, index) => {
+          const response = rawResponse.data as QuoteResponse;
+          buyTokenToQuoteMapForOrgToken[transformedTokens[index]] = response;
+        });
+        sellTokenToQuoteMap[orgToken] = buyTokenToQuoteMapForOrgToken;
+      }
+
+      // inverse
+      {
+        // inverseのquoteをクエリ
+        const inversePromises = [];
+        transformedTokens.forEach(transformedToken => {
+          const sellToken = transformedToken;
+          const decimals = zeroxTokenInfo[sellToken].decimals;
+          const guaranteedPrice = sellTokenToQuoteMap[orgToken][transformedToken].guaranteedPrice;
+          const sellAmount = new BigNumber(guaranteedPrice)
+            .multipliedBy(new BigNumber(orgAmount))
+            .multipliedBy(new BigNumber(`1e${decimals}`))
+            .toFixed();
+          // 以下はベストな取引価格の場合なので今回は使わない
+          // const sellAmount = sellTokenToQuoteMap[orgToken][transformedToken].buyAmount  // = sellTokenToQuoteMap[orgToken][transformedToken].price * orgAmount * decimals
+          const buyToken = orgToken;
+          const config: AxiosRequestConfig = {
+            params: {
+              sellToken,
+              sellAmount,
+              buyToken,
+            },
+          };
+          inversePromises.push(axios.get(url, config));
+        });
+        const inverseResponses = await Promise.all(inversePromises);
+
+        // inverseに対するquoteのマップを作成
+        inverseResponses.forEach((rawResponse, index) => {
+          const response = rawResponse.data as QuoteResponse;
+          const buyTokenToQuoteMap: BuyTokenToQuoteMap = {};
+          buyTokenToQuoteMap[orgToken] = response;
+          sellTokenToQuoteMap[transformedTokens[index]] = buyTokenToQuoteMap;
+        });
+      }
+
+      return sellTokenToQuoteMap;
+    } catch (error) {
+      throw error;
     }
-
-    // inverse
-    {
-      // inverseのquoteをクエリ
-      const inversePromises = [];
-      transformedTokens.forEach(transformedToken => {
-        const sellToken = transformedToken;
-        const decimals = zeroxTokenInfo[sellToken].decimals;
-        const guaranteedPrice = sellTokenToQuoteMap[orgToken][transformedToken].guaranteedPrice;
-        const sellAmount = new BigNumber(guaranteedPrice)
-          .multipliedBy(new BigNumber(orgAmount))
-          .multipliedBy(new BigNumber(`1e${decimals}`))
-          .toFixed();
-        // 以下はベストな取引価格の場合なので今回は使わない
-        // const sellAmount = sellTokenToQuoteMap[orgToken][transformedToken].buyAmount  // = sellTokenToQuoteMap[orgToken][transformedToken].price * orgAmount * decimals
-        const buyToken = orgToken;
-        const config: AxiosRequestConfig = {
-          params: {
-            sellToken,
-            sellAmount,
-            buyToken,
-          },
-        };
-        inversePromises.push(axios.get(url, config));
-      });
-      const inverseResponses = await Promise.all(inversePromises);
-
-      // inverseに対するquoteのマップを作成
-      inverseResponses.forEach((rawResponse, index) => {
-        const response = rawResponse.data as QuoteResponse;
-        const buyTokenToQuoteMap: BuyTokenToQuoteMap = {};
-        buyTokenToQuoteMap[orgToken] = response;
-        sellTokenToQuoteMap[transformedTokens[index]] = buyTokenToQuoteMap;
-      });
-    }
-
-    return sellTokenToQuoteMap;
   }
 
   public getBuyTokenInterestRatePairs(orgToken: string, orgAmount: number, transformedTokens: string[], sellTokenToQuoteMap: SellTokenToQuoteMap) {
@@ -189,6 +197,27 @@ class ArbService {
     });
 
     return buyTokenInterestRatePairs;
+  }
+
+  public async watch(orgToken: string, orgAmount: number, transformedTokens: string[]) {
+    try {
+      const sellTokenToQuoteMap = await this.getSellTokenToQuoteMap(orgToken, orgAmount, transformedTokens);
+
+      // DAIからの往復を計算
+      const buyTokenInterestRatePairs = this.getBuyTokenInterestRatePairs(orgToken, orgAmount, transformedTokens, sellTokenToQuoteMap);
+
+      // レートが1番いいアービトラージ
+      const bestForwardQuote = sellTokenToQuoteMap[orgToken][buyTokenInterestRatePairs[0].buyToken];
+      const bestInverseQuote = sellTokenToQuoteMap[buyTokenInterestRatePairs[0].buyToken][orgToken];
+
+      return {
+        bestForwardQuote,
+        bestInverseQuote,
+        buyTokenInterestRatePairs,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

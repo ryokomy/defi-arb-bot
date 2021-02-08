@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { debug } from 'winston';
+import BigNumber from 'bignumber.js';
 import ArbService from '../services/arb.service';
+import * as TokenSwap from '../contracts/TokenSwap.contract';
 
 class ArbController {
   public arbService = new ArbService();
 
   private orgToken = 'DAI';
-  private orgAmount = 1000; // 1000[DAI]
+  private orgAmount = 100000; // 100000[DAI]
   private transformedTokens: string[] = [
     'WETH',
     'BAT',
@@ -24,46 +26,57 @@ class ArbController {
     'UNI',
     '1INCH',
     'SAI',
+    'NMR',
+    'ZRX',
+    'BAL',
   ];
 
-  public zerox = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  public watch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      debug('called /arb/zerox');
+      debug('called /arb/watch');
 
-      const sellTokenToQuoteMap = await this.arbService.getSellTokenToQuoteMap(this.orgToken, this.orgAmount, this.transformedTokens);
+      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.transformedTokens);
 
-      // DAIからの往復を計算
-      const buyTokenInterestRatePairs = this.arbService.getBuyTokenInterestRatePairs(
-        this.orgToken,
-        this.orgAmount,
-        this.transformedTokens,
-        sellTokenToQuoteMap,
+      res.status(200).json({
+        bestForwardQuote: result.bestForwardQuote,
+        bestInverseQuote: result.bestInverseQuote,
+        buyTokenInterestRatePairs: result.buyTokenInterestRatePairs,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public execute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      debug('called /arb/execute');
+
+      const result = await this.arbService.watch(this.orgToken, this.orgAmount, this.transformedTokens);
+
+      const bestForwardQuote = result.bestForwardQuote;
+      const bestInverseQuote = result.bestInverseQuote;
+      const buyTokenInterestRatePairs = result.buyTokenInterestRatePairs;
+
+      // レートが1番いいものをarbitrage
+      const value = new BigNumber(bestForwardQuote.value).plus(new BigNumber(bestInverseQuote.value)).toFixed();
+      const txReceipt = await TokenSwap.sendTx.arbitrage(
+        bestForwardQuote.sellTokenAddress,
+        bestForwardQuote.sellAmount,
+        bestForwardQuote.buyTokenAddress,
+        bestForwardQuote.allowanceTarget,
+        bestForwardQuote.to,
+        bestForwardQuote.data,
+        bestInverseQuote.allowanceTarget,
+        bestInverseQuote.to,
+        bestInverseQuote.data,
+        value,
       );
-
-      // レートが1番いいアービトラージ
-      const bestForwardQuote = sellTokenToQuoteMap[this.orgToken][buyTokenInterestRatePairs[0].buyToken];
-      const bestInverseQuote = sellTokenToQuoteMap[buyTokenInterestRatePairs[0].buyToken][this.orgToken];
-
-      // // レートが1番いいものをarbitrage
-      // const value = new BigNumber(bestForwardQuote.value).plus(new BigNumber(bestInverseQuote.value)).toFixed();
-      // const txReceipt = await TokenSwap.sendTx.arbitrage(
-      //   bestForwardQuote.sellTokenAddress,
-      //   bestForwardQuote.sellAmount,
-      //   bestForwardQuote.buyTokenAddress,
-      //   bestForwardQuote.allowanceTarget,
-      //   bestForwardQuote.to,
-      //   bestForwardQuote.data,
-      //   bestInverseQuote.allowanceTarget,
-      //   bestInverseQuote.to,
-      //   bestInverseQuote.data,
-      //   value,
-      // );
 
       res.status(200).json({
         bestForwardQuote,
         bestInverseQuote,
         buyTokenInterestRatePairs,
-        // txReceipt,
+        txReceipt,
       });
     } catch (error) {
       next(error);
