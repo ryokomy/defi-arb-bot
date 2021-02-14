@@ -10,7 +10,7 @@ const getTokenSwapContract = async () => {
   const TokenSwap = new web3.eth.Contract(ABI, CONTRACT_ADDRESS);
   TokenSwap.options.from = web3.eth.accounts.wallet[0].address; // default from owner address
   TokenSwap.options.gasPrice = (5e9).toString();
-  TokenSwap.options.gas = 4e6;
+  TokenSwap.options.gas = 6e6;
 
   return TokenSwap;
 };
@@ -72,6 +72,45 @@ const arbitrage = async (
 /**
  * sendTx: TokenSwap.fillQuote
  */
+const arbitrageEstimateGas = async (
+  orgToken: string,
+  flashLoanAmount: string,
+  viaToken: string,
+  forwardSpender: string,
+  forwardSwapTarget: string,
+  forwardSwapCallData: string,
+  inverseSpender: string,
+  inverseSwapTarget: string,
+  inverseSwapCallData: string,
+  value: string,
+) => {
+  // TokenSwap
+  const TokenSwap = await getTokenSwapContract();
+
+  try {
+    // transaction
+    const estimatedGas = (await TokenSwap.methods
+      .arbitrage(
+        orgToken,
+        flashLoanAmount,
+        viaToken,
+        forwardSpender,
+        forwardSwapTarget,
+        forwardSwapCallData,
+        inverseSpender,
+        inverseSwapTarget,
+        inverseSwapCallData,
+      )
+      .estimateGas({ value })) as number;
+    return estimatedGas;
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * sendTx: TokenSwap.fillQuote
+ */
 const fillQuote = async (sellToken: string, buyToken: string, spender: string, swapTarget: string, swapCallData: string, value: string) => {
   // TokenSwap
   const TokenSwap = await getTokenSwapContract();
@@ -102,3 +141,8 @@ export const call = {
 
 // event
 export const event = {};
+
+// sendTx
+export const estimateGas = {
+  arbitrageEstimateGas,
+};

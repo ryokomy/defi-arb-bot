@@ -7,13 +7,16 @@ import * as TokenSwap from '../contracts/TokenSwap.contract';
 class ArbController {
   public arbService = new ArbService();
 
-  private orgToken = 'DAI';
-  private orgAmount = 100000; // 100000[DAI]
+  private orgToken = 'WETH';
+  private orgAmount = 1000;
   private viaTokens: string[] = [
-    'WETH',
+    'DAI',
+    'WBTC',
+    'USDC',
+    'USDT',
+    'TUSD',
     'BAT',
     'MKR',
-    'WBTC',
     'SNX',
     'LINK',
     'MANA',
@@ -59,7 +62,7 @@ class ArbController {
 
       // レートが1番いいものをarbitrage
       const value = new BigNumber(bestForwardQuote.value).plus(new BigNumber(bestInverseQuote.value)).toFixed();
-      const txReceipt = await TokenSwap.sendTx.arbitrage(
+      const estimatedGas = await TokenSwap.estimateGas.arbitrageEstimateGas(
         bestForwardQuote.sellTokenAddress,
         bestForwardQuote.sellAmount,
         bestForwardQuote.buyTokenAddress,
@@ -71,12 +74,24 @@ class ArbController {
         bestInverseQuote.data,
         value,
       );
-
+      // const txReceipt = await TokenSwap.sendTx.arbitrage(
+      //   bestForwardQuote.sellTokenAddress,
+      //   bestForwardQuote.sellAmount,
+      //   bestForwardQuote.buyTokenAddress,
+      //   bestForwardQuote.allowanceTarget,
+      //   bestForwardQuote.to,
+      //   bestForwardQuote.data,
+      //   bestInverseQuote.allowanceTarget,
+      //   bestInverseQuote.to,
+      //   bestInverseQuote.data,
+      //   value,
+      // );
       res.status(200).json({
         bestForwardQuote,
         bestInverseQuote,
         buyTokenInterestRatePairs,
-        txReceipt,
+        estimatedGas,
+        // txReceipt,
       });
     } catch (error) {
       next(error);

@@ -5,33 +5,40 @@ import { BuyTokenInterestRatePair } from './services/arb.service';
 import fs from 'fs';
 import cron from 'node-cron';
 
+// -------------- Settings --------------
+const orgToken = 'WETH';
+const orgAmount = 1000;
+const viaTokens: string[] = [
+  'DAI',
+  'WBTC',
+  'USDC',
+  'USDT',
+  'TUSD',
+  'BAT',
+  'MKR',
+  'SNX',
+  'LINK',
+  'MANA',
+  'ENJ',
+  'COMP',
+  'AAVE',
+  'YFI',
+  'CRV',
+  'SUSHI',
+  'UNI',
+  '1INCH',
+  'SAI',
+  'NMR',
+  'ZRX',
+  'BAL',
+];
+// -----------------------------------------
+
 const startDate = moment.utc().toDate();
-const filename = `./src/logs/watch/${startDate}.csv`;
+const filename = `./src/logs/watch/${startDate}-${orgToken}-${orgAmount}.csv`;
 
 const writeRecord = async () => {
   console.log('Start...');
-
-  const viaTokens: string[] = [
-    'WETH',
-    'BAT',
-    'MKR',
-    'WBTC',
-    'SNX',
-    'LINK',
-    'MANA',
-    'ENJ',
-    'COMP',
-    'AAVE',
-    'YFI',
-    'CRV',
-    'SUSHI',
-    'UNI',
-    '1INCH',
-    'SAI',
-    'NMR',
-    'ZRX',
-    'BAL',
-  ];
 
   const header = [];
   header.push({ id: 'date', title: 'DATE' });
